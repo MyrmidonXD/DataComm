@@ -1,0 +1,6 @@
+obj
+bin
+/Properties
+/.gitignore
+/App.config
+/CSMA_Simulation.csproj
