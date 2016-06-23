@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CSMA_Simulation
 {
@@ -253,6 +250,9 @@ namespace CSMA_Simulation
             elapsed_time = 0L;
 
             medium_state = MediumState.Idle;
+            medium_next_state = MediumState.Idle;
+            collision_trigger = false;
+            next_collision_trigger = false;
 
             _node_list.Clear();
         }
@@ -295,10 +295,12 @@ namespace CSMA_Simulation
                 elapsed_time++;
 
                 // 상태 출력
+                /*
                 if (elapsed_time % 100000L == 0)
                     PrintCurrentState(output_file);
+                 */
             }
-            Console.WriteLine("Done.");
+            PrintCurrentState(output_file);
         }
     }
 
@@ -307,17 +309,94 @@ namespace CSMA_Simulation
         static void Main(string[] args)
         {
             CommManager m = CommManager.Instance;
+            m.output_file = new StreamWriter(AppDomain.CurrentDomain.BaseDirectory + "simulation_output.txt");
 
-            if(args.Length != 0 && args[0].Equals(""))
+            int attempt = 10;
+            long sec = 100L;
+
+            if (m.output_file == null)
             {
-                string windir = System.Environment.GetEnvironmentVariable("windir");
-                m.output_file = new StreamWriter(windir + "\\" + args[0]);
+                Console.WriteLine("File Stream opening Failed!");
+                return;
             }
 
+            Console.WriteLine("Simulation Start...");
+            
             m.ChangeScheme(0);
-            m.ChangeParameters(32L, 25L);
+            m.output_file.WriteLine("/////////////////////   Scheme: CSMA     /////////////////////////////");
+            Console.WriteLine("/////////////////////   Scheme: CSMA     /////////////////////////////");
+            for (long CW = 32L; CW < 129L; CW = CW * 2L)
+            {
+                m.ChangeParameters(CW, 15L);
+                m.output_file.WriteLine("----- CW: {0}, N: {1} -----", CW, 15L);
+                Console.WriteLine("----- CW: {0}, N: {1} -----", CW, 15L);
+                for (int i = 0; i < attempt; i++)
+                {
+                    m.Simulate(sec);
+                    Console.WriteLine("{0}-th attempt done.", i + 1);
+                }
+            }
 
-            m.Simulate(1000L);
+            for (long N = 5L; N < 30L; N += 5L)
+            {
+                if (N == 15L) continue;
+
+                m.ChangeParameters(64L, N);
+                m.output_file.WriteLine("----- CW: {0}, N: {1} -----", 64L, N);
+                Console.WriteLine("----- CW: {0}, N: {1} -----", 64L, N);
+                for (int i = 0; i < attempt; i++)
+                {
+                    m.Simulate(sec);
+                    Console.WriteLine("{0}-th attempt done.", i + 1);
+                }
+            }
+
+            m.ChangeScheme(1);
+            m.output_file.WriteLine("/////////////////////   Scheme: CSMA/CD     //////////////////////////");
+            Console.WriteLine("/////////////////////   Scheme: CSMA/CD     //////////////////////////");
+            for (long CW = 32L; CW < 129L; CW = CW * 2L)
+            {
+                m.ChangeParameters(CW, 15L);
+                m.output_file.WriteLine("----- CW: {0}, N: {1} -----", CW, 15L);
+                Console.WriteLine("----- CW: {0}, N: {1} -----", CW, 15L);
+                for (int i = 0; i < attempt; i++)
+                {
+                    m.Simulate(sec);
+                    Console.WriteLine("{0}-th attempt done.", i + 1);
+                }
+            }
+            for (long N = 5L; N < 30L; N += 5L)
+            {
+                if (N == 15L) continue;
+
+                m.ChangeParameters(64L, N);
+                m.output_file.WriteLine("----- CW: {0}, N: {1} -----", 64L, N);
+                Console.WriteLine("----- CW: {0}, N: {1} -----", 64L, N);
+                for (int i = 0; i < attempt; i++)
+                {
+                    m.Simulate(sec);
+                    Console.WriteLine("{0}-th attempt done.", i + 1);
+                }
+            }
+            
+            m.ChangeScheme(2);
+            m.output_file.WriteLine("/////////////////////   Scheme: CSMA/CD binary backoff     ///////////");
+            Console.WriteLine("/////////////////////   Scheme: CSMA/CD binary backoff     ///////////");
+            for (long N = 20L; N < 30L; N += 5L)
+            {
+                m.ChangeParameters(64L, N);
+                m.output_file.WriteLine("---------  N: {0} ---------", N);
+                Console.WriteLine("---------  N: {0} ---------", N);
+                for (int i = 0; i < attempt; i++)
+                {
+                    m.Simulate(sec);
+                    Console.WriteLine("{0}-th attempt done.", i + 1);
+                }
+            }
+
+            Console.WriteLine("\tDone.");
+            m.output_file.WriteLine("\tDone.");
+            m.output_file.Close();
         }
     }
 }
